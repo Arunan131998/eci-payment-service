@@ -1,0 +1,28 @@
+version: '3.9'
+services:
+  payment-db:
+    image: postgres:16
+    container_name: payment-db
+    environment:
+      POSTGRES_DB: payment_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - payment_db_data:/var/lib/postgresql/data
+
+  payment-service:
+    build: .
+    container_name: payment-service
+    environment:
+      PORT: 3004
+      SERVICE_NAME: payment-service
+      DATABASE_URL: postgres://postgres:postgres@payment-db:5432/payment_db
+    depends_on:
+      - payment-db
+    ports:
+      - "3004:3004"
+
+volumes:
+  payment_db_data:

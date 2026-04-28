@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: payment-config
+data:
+  SERVICE_NAME: payment-service
+  PORT: "3004"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: payment-secret
+type: Opaque
+stringData:
+  db_password: postgres
+  database_url: postgres://postgres:postgres@payment-db:5432/payment_db

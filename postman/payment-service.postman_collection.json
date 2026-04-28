@@ -1,0 +1,178 @@
+{
+  "info": {
+    "_postman_id": "3d49a0f7-6f08-4a9d-b77f-a8dbf7df2101",
+    "name": "ECI - Payment Service APIs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health - Payment",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Health payload has service', function () {",
+              "  const json = pm.response.json();",
+              "  pm.expect(json).to.have.property('service');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "x-correlation-id", "value": "{{$guid}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrlPayment}}/health",
+          "host": ["{{baseUrlPayment}}"],
+          "path": ["health"]
+        }
+      }
+    },
+    {
+      "name": "Charge Payment (Idempotent)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.environment.set('idempotencyKey', `pay-${Date.now()}-${Math.floor(Math.random()*10000)}`);",
+              "pm.environment.set('correlationId', pm.variables.replaceIn('{{$guid}}'));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 201, 200, or 402', function () {",
+              "  pm.expect([200, 201, 402]).to.include(pm.response.code);",
+              "});",
+              "pm.test('Payment response contains payment_id', function () {",
+              "  const json = pm.response.json();",
+              "  pm.expect(json).to.have.property('payment_id');",
+              "  pm.environment.set('paymentId', json.payment_id);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+          { "key": "x-correlation-id", "value": "{{correlationId}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"order_id\": \"{{orderId}}\",\n  \"amount\": 1499.50,\n  \"method\": \"UPI\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrlPayment}}/v1/payments/charge",
+          "host": ["{{baseUrlPayment}}"],
+          "path": ["v1", "payments", "charge"]
+        }
+      }
+    },
+    {
+      "name": "List Payments",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Pagination response shape is valid', function () {",
+              "  const json = pm.response.json();",
+              "  pm.expect(json.items).to.be.an('array');",
+              "  pm.expect(json).to.have.property('page');",
+              "  pm.expect(json).to.have.property('limit');",
+              "  pm.expect(json).to.have.property('total');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "x-correlation-id", "value": "{{$guid}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrlPayment}}/v1/payments?page=1&limit=10&order_id={{orderId}}",
+          "host": ["{{baseUrlPayment}}"],
+          "path": ["v1", "payments"],
+          "query": [
+            { "key": "page", "value": "1" },
+            { "key": "limit", "value": "10" },
+            { "key": "order_id", "value": "{{orderId}}" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Refund Payment (Idempotent)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.environment.set('idempotencyKey', `refund-${Date.now()}-${Math.floor(Math.random()*10000)}`);",
+              "pm.environment.set('correlationId', pm.variables.replaceIn('{{$guid}}'));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 201, 200, or 404', function () {",
+              "  pm.expect([200, 201, 404]).to.include(pm.response.code);",
+              "});",
+              "pm.test('Error format on 404 is standard', function () {",
+              "  if (pm.response.code === 404) {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json).to.have.property('code');",
+              "    pm.expect(json).to.have.property('message');",
+              "    pm.expect(json).to.have.property('correlationId');",
+              "  }",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" },
+          { "key": "x-correlation-id", "value": "{{correlationId}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"amount\": 100.00\n}"
+        },
+        "url": {
+          "raw": "{{baseUrlPayment}}/v1/payments/{{paymentId}}/refund",
+          "host": ["{{baseUrlPayment}}"],
+          "path": ["v1", "payments", "{{paymentId}}", "refund"]
+        }
+      }
+    }
+  ]
+}
