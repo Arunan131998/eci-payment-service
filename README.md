@@ -70,12 +70,6 @@ docker compose -f docker-compose.yml down
 ### Seeding (PowerShell)
 Run from the `FullApplication/` root directory:
 ```powershell
-# Watch automatic seed progress
-docker compose -f docker-compose.yml logs -f seed
-
-# Rerun the seed job manually
-docker compose -f docker-compose.yml up --build seed
-
 # Seed only payment service
 docker compose -f docker-compose.yml exec payment-service npm run seed
 ```
