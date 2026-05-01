@@ -164,7 +164,7 @@ router.post('/:paymentId/refund', async (req, res, next) => {
           'Content-Type': 'application/json',
           'x-correlation-id': idempotencyKey
         },
-        body: JSON.stringify({ payment_id: original.rows[0].payment_id, payment_status: 'REFUNDED' })
+        body: JSON.stringify({ payment_id: inserted.rows[0].payment_id, payment_status: 'REFUNDED' })
       }).catch(() => {});
     }
 
