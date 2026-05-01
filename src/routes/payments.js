@@ -163,4 +163,19 @@ router.get('/', async (req, res, next) => {
   }
 });
 
+router.get('/:paymentId', async (req, res, next) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM payments WHERE payment_id = $1',
+      [req.params.paymentId]
+    );
+    if (!result.rows.length) {
+      return next({ status: 404, code: 'PAYMENT_NOT_FOUND', message: 'Payment not found' });
+    }
+    return res.json(result.rows[0]);
+  } catch (error) {
+    return next(error);
+  }
+});
+
 module.exports = router;
