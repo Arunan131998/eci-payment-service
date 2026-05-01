@@ -23,6 +23,11 @@ spec:
               value: "3004"
             - name: SERVICE_NAME
               value: payment-service
+            - name: ORDER_CALLBACK_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: payment-config
+                  key: ORDER_CALLBACK_URL
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:

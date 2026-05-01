@@ -5,6 +5,7 @@ metadata:
 data:
   SERVICE_NAME: payment-service
   PORT: "3004"
+  ORDER_CALLBACK_URL: http://order-service:3003/v1/orders
 ---
 apiVersion: v1
 kind: Secret

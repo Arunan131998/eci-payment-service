@@ -4,6 +4,15 @@ const { paymentsFailedTotal } = require('../metrics');
 
 const router = express.Router();
 
+async function safeFetch(url, options = {}) {
+  try {
+    const response = await fetch(url, options);
+    return { ok: response.ok, status: response.status };
+  } catch (_) {
+    return { ok: false, status: 0 };
+  }
+}
+
 function parsePagination(query) {
   const page = Math.max(parseInt(query.page || '1', 10), 1);
   const limit = Math.min(Math.max(parseInt(query.limit || '10', 10), 1), 100);
@@ -52,6 +61,19 @@ router.post('/charge', async (req, res, next) => {
     }
 
     await client.query('COMMIT');
+
+    const orderCallbackUrl = process.env.ORDER_CALLBACK_URL;
+    if (orderCallbackUrl) {
+      safeFetch(`${orderCallbackUrl}/${order_id}/events/payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-correlation-id': idempotencyKey
+        },
+        body: JSON.stringify({ payment_id: inserted.rows[0].payment_id, payment_status: status })
+      }).catch(() => {});
+    }
+
     const statusCode = status === 'SUCCESS' ? 201 : 402;
     return res.status(statusCode).json(inserted.rows[0]);
   } catch (error) {
@@ -115,6 +137,19 @@ router.post('/:paymentId/refund', async (req, res, next) => {
     );
 
     await client.query('COMMIT');
+
+    const orderCallbackUrl = process.env.ORDER_CALLBACK_URL;
+    if (orderCallbackUrl) {
+      safeFetch(`${orderCallbackUrl}/${original.rows[0].order_id}/events/payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-correlation-id': idempotencyKey
+        },
+        body: JSON.stringify({ payment_id: original.rows[0].payment_id, payment_status: 'REFUNDED' })
+      }).catch(() => {});
+    }
+
     return res.status(201).json(inserted.rows[0]);
   } catch (error) {
     await client.query('ROLLBACK');
