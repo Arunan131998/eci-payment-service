@@ -28,6 +28,11 @@ spec:
                 configMapKeyRef:
                   name: payment-config
                   key: ORDER_CALLBACK_URL
+            - name: NOTIFICATION_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: payment-config
+                  key: NOTIFICATION_BASE_URL
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:

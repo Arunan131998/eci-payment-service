@@ -6,6 +6,7 @@ ECI Payment microservice implementing idempotent charge/refund flows with DB-per
 - Versioned API: `/v1/payments`
 - Idempotent operations via `Idempotency-Key`
 - Order callback integration via `ORDER_CALLBACK_URL` to update order payment status
+- Notification callback integration via `NOTIFICATION_BASE_URL` for payment events
 - Standard error format: `code`, `message`, `correlationId`
 - Pagination/filtering on list API
 - OpenAPI docs at `/docs`

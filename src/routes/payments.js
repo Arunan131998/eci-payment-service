@@ -13,6 +13,22 @@ async function safeFetch(url, options = {}) {
   }
 }
 
+function emitNotificationEvent(eventType, orderId, correlationId) {
+  const notifBaseUrl = process.env.NOTIFICATION_BASE_URL;
+  if (!notifBaseUrl) {
+    return;
+  }
+
+  safeFetch(`${notifBaseUrl}/v1/notifications/events`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-correlation-id': correlationId
+    },
+    body: JSON.stringify({ event_type: eventType, order_id: orderId })
+  }).catch(() => {});
+}
+
 function parsePagination(query) {
   const page = Math.max(parseInt(query.page || '1', 10), 1);
   const limit = Math.min(Math.max(parseInt(query.limit || '10', 10), 1), 100);
@@ -73,6 +89,8 @@ router.post('/charge', async (req, res, next) => {
         body: JSON.stringify({ payment_id: inserted.rows[0].payment_id, payment_status: status })
       }).catch(() => {});
     }
+
+    emitNotificationEvent(status === 'SUCCESS' ? 'PAYMENT_COMPLETED' : 'PAYMENT_FAILED', order_id, idempotencyKey);
 
     const statusCode = status === 'SUCCESS' ? 201 : 402;
     return res.status(statusCode).json(inserted.rows[0]);
@@ -149,6 +167,8 @@ router.post('/:paymentId/refund', async (req, res, next) => {
         body: JSON.stringify({ payment_id: original.rows[0].payment_id, payment_status: 'REFUNDED' })
       }).catch(() => {});
     }
+
+    emitNotificationEvent('PAYMENT_REFUNDED', original.rows[0].order_id, idempotencyKey);
 
     return res.status(201).json(inserted.rows[0]);
   } catch (error) {
